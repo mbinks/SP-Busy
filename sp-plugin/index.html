@@ -1,432 +1,754 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>HA Bridge</title>
-<style>
-:root{--bg:var(--background-color,#1e1e2e);--card:var(--card-background-color,rgba(127,127,127,0.08));--border:var(--border-color,rgba(127,127,127,0.2));--text:var(--primary-text-color,#e0e0e0);--dim:var(--secondary-text-color,rgba(127,127,127,0.7));--accent:var(--accent-color,#42a5f5);--success:#66bb6a;--warn:#ffa726;--err:#ef5350;--r:10px}
-*{box-sizing:border-box;margin:0;padding:0}body{font-family:var(--font-family,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif);color:var(--text);background:var(--bg);font-size:13px;line-height:1.5}
-.tabs{display:flex;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:10;backdrop-filter:blur(8px)}
-.tab{flex:1;padding:10px 4px;text-align:center;font-size:.75em;font-weight:500;opacity:.5;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
-.tab:hover{opacity:.8}.tab.active{opacity:1;border-bottom-color:var(--accent);color:var(--accent)}
-.page{display:none;padding:14px}.page.active{display:block}
-.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:10px}
-.card-title{font-size:.7em;text-transform:uppercase;letter-spacing:1.5px;opacity:.4;margin-bottom:8px}
-.row{display:flex;justify-content:space-between;align-items:center;padding:5px 0}.row+.row{border-top:1px solid rgba(255,255,255,.03)}
-.btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:.82em;cursor:pointer;transition:all .15s;margin-bottom:5px}
-.btn:hover{background:rgba(255,255,255,.08)}.btn.accent{border-color:rgba(66,165,245,.4);color:var(--accent)}.btn.success{border-color:rgba(102,187,106,.4);color:var(--success)}.btn.warn{border-color:rgba(255,167,38,.4);color:var(--warn)}.btn.err{border-color:rgba(239,83,80,.4);color:var(--err)}.btn.sm{width:auto;padding:5px 10px;font-size:.75em;display:inline-flex}
-.field{margin-bottom:10px}.field label{display:block;font-size:.78em;opacity:.6;margin-bottom:3px}
-.field input,.field select,.field textarea{width:100%;padding:7px 9px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:.88em}
-.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent)}.field .hint{font-size:.72em;opacity:.35;margin-top:2px}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:8px;font-size:.72em;font-weight:500}
-.badge.ok{background:rgba(76,175,80,.15);color:var(--success)}.badge.err{background:rgba(244,67,54,.15);color:var(--err)}
-.dot{width:6px;height:6px;border-radius:50%}.dot.ok{background:var(--success);animation:pulse 2s infinite}.dot.err{background:var(--err)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg)}.header h1{font-size:1em;font-weight:600}
-.rule-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px;margin-bottom:8px}
-.rule-card .rule-name{font-weight:600;font-size:.9em}.rule-card .rule-desc{font-size:.75em;opacity:.5;margin-top:2px}
-.rule-card .rule-actions{display:flex;gap:4px;margin-top:6px}
-.toggle{width:36px;height:20px;border-radius:10px;background:rgba(255,255,255,.1);position:relative;cursor:pointer;border:1px solid var(--border)}
-.toggle.on{background:rgba(102,187,106,.3);border-color:rgba(102,187,106,.5)}
-.toggle::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--text);transition:.2s}
-.toggle.on::after{left:18px}
-.sensor-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.sensor-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center}
-.sensor-card .value{font-size:1.3em;font-weight:700;margin:3px 0}.sensor-card .label{font-size:.7em;opacity:.5}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BusyBar Status Sync</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+    }
+    .header h1 { font-size: 28px; margin-bottom: 5px; }
+    .header p { font-size: 14px; opacity: 0.9; }
+    
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      background: white;
+      border-radius: 8px;
+      padding: 5px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 6px;
+      transition: all 0.2s;
+      color: #666;
+    }
+    .tab-btn.active {
+      background: #667eea;
+      color: white;
+    }
+    .tab-btn:hover { background: #f0f0f0; }
+    .tab-btn.active:hover { background: #667eea; }
+    
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    .status-display {
+      text-align: center;
+      padding: 30px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .status-display .emoji { font-size: 48px; margin-bottom: 10px; }
+    .status-display .status-value { font-size: 32px; font-weight: bold; margin-bottom: 5px; }
+    .status-display .status-message { font-size: 14px; opacity: 0.9; }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #333;
+    }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: #667eea;
+      color: white;
+      flex: 1;
+    }
+    .btn-primary:hover { background: #5568d3; }
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+      flex: 1;
+    }
+    .btn-secondary:hover { background: #e0e0e0; }
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+    .btn-danger:hover { background: #dc2626; }
+    
+    .alert {
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    .alert-success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+    .alert-error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    .alert-info {
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+    }
+    
+    .rule-item {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 12px;
+      background: #f9fafb;
+    }
+    .rule-item.disabled { opacity: 0.6; }
+    .rule-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .rule-name { font-weight: 600; color: #333; }
+    .rule-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      background: #e0e7ff;
+      color: #4f46e5;
+    }
+    .rule-details {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+    .rule-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-switch .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.3s;
+      border-radius: 24px;
+    }
+    .toggle-switch .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+    .toggle-switch input:checked + .slider {
+      background-color: #667eea;
+    }
+    .toggle-switch input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    
+    .connection-status {
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .connection-status.connected {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+    .connection-status.disconnected {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #667eea;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+    .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-state-text { font-size: 16px; margin-bottom: 20px; }
+  </style>
 </head>
 <body>
-<div class="header"><h1>HA Bridge</h1><span class="badge" id="conn-badge"><span class="dot" id="conn-dot"></span><span id="conn-text">...</span></span></div>
-<div class="tabs">
-<div class="tab active" data-page="rules">Rules</div>
-<div class="tab" data-page="sensors">Sensors</div>
-<div class="tab" data-page="services">Services</div>
-<div class="tab" data-page="settings">Settings</div>
-</div>
-
-<div class="page active" id="page-rules"><div id="rules-list"></div><button class="btn accent" onclick="addRule()">+ Add Rule</button></div>
-
-<div class="page" id="page-editor">
-<div class="card">
-<div class="card-title">Edit Rule</div>
-<div class="field"><label>Rule Name</label><input id="re-name" placeholder="Focus mode on start"></div>
-<div class="field"><label>Trigger</label><select id="re-trigger" onchange="toggleTimerField()">
-<option value="task_start">Task Started (tracking begins)</option>
-<option value="task_stop">Task Stopped (tracking ends)</option>
-<option value="task_switch">Task Switched (changed to different task)</option>
-<option value="task_complete">Task Completed (marked done)</option>
-<option value="task_created">Task Created (new task added)</option>
-<option value="task_updated">Task Updated (any field change)</option>
-<option value="task_deleted">Task Deleted</option>
-<option value="tags_changed">Tags Changed (on a task)</option>
-<option value="project_changed">Project Changed (task moved)</option>
-<option value="due_date_changed">Due Date Changed</option>
-<option value="estimate_changed">Time Estimate Changed</option>
-<option value="estimate_exceeded">Time Estimate Exceeded</option>
-<option value="notes_changed">Notes Updated</option>
-<option value="first_task_of_day">First Task of Day</option>
-<option value="all_done">All Today's Tasks Done</option>
-<option value="timer">Timer (X min of tracking)</option>
-<option value="idle">Idle (X min no tracking)</option>
-<option value="context_switch">Context/View Switched</option>
-<option value="project_list_changed">Project List Changed</option>
-<option value="day_end">Day Finished</option>
-</select></div>
-<div class="field" id="re-timer-field" style="display:none"><label>Minutes</label><input id="re-minutes" type="number" placeholder="25"></div>
-<div class="card-title" style="margin-top:12px">Conditions (optional)</div>
-<div class="field"><label>Project</label><select id="re-project"><option value="">Any</option></select></div>
-<div class="field"><label>Tag</label><select id="re-tag"><option value="">Any</option></select></div>
-<div class="field"><label>Title Contains</label><input id="re-title" placeholder=""></div>
-<div class="card-title" style="margin-top:12px">Action</div>
-<div class="field"><label>Action Type</label><select id="re-action-type" onchange="toggleActionFields()">
-<option value="scene">Activate Scene</option>
-<option value="automation">Trigger Automation</option>
-<option value="script">Run Script</option>
-<option value="toggle">Toggle Entity</option>
-<option value="light">Set Light (color/brightness)</option>
-<option value="light_off">Turn Off Light</option>
-<option value="media">Media Control</option>
-<option value="tts">TTS Announcement</option>
-<option value="service">Custom Service Call</option>
-<option value="notify">Phone Notification</option>
-</select></div>
-<div class="field action-field" id="af-scene"><label>Scene</label><select id="re-scene"></select></div>
-<div class="field action-field" id="af-automation" style="display:none"><label>Automation</label><select id="re-automation"></select></div>
-<div class="field action-field" id="af-script" style="display:none"><label>Script</label><select id="re-script"></select></div>
-<div class="field action-field" id="af-toggle" style="display:none"><label>Entity to Toggle</label><select id="re-toggle-entity"></select></div>
-<div class="field action-field" id="af-light" style="display:none"><label>Light</label><select id="re-light-entity"></select></div>
-<div class="field action-field" id="af-brightness" style="display:none"><label>Brightness (0-255)</label><input id="re-brightness" type="number" placeholder="200"></div>
-<div class="field action-field" id="af-color-temp" style="display:none"><label>Color Temp (Kelvin)</label><input id="re-color-temp" type="number" placeholder="4000"></div>
-<div class="field action-field" id="af-media" style="display:none"><label>Media Player</label><select id="re-media-entity"></select></div>
-<div class="field action-field" id="af-media-action" style="display:none"><label>Action</label><select id="re-media-action"><option value="media_play_pause">Play/Pause</option><option value="media_play">Play</option><option value="media_pause">Pause</option><option value="media_next_track">Next</option><option value="media_previous_track">Previous</option><option value="volume_up">Volume Up</option><option value="volume_down">Volume Down</option></select></div>
-<div class="field action-field" id="af-tts-entity" style="display:none"><label>Speaker</label><select id="re-tts-speaker"></select></div>
-<div class="field action-field" id="af-tts-msg" style="display:none"><label>Message</label><input id="re-tts-message" placeholder="Time for a break!"></div>
-<div class="field action-field" id="af-service" style="display:none"><label>Service (domain.action)</label><input id="re-service" placeholder="light.turn_on"></div>
-<div class="field action-field" id="af-entity" style="display:none"><label>Target Entity</label><select id="re-entity"></select></div>
-<div class="field action-field" id="af-notify" style="display:none"><label>Message</label><input id="re-message" placeholder="Take a break!"></div>
-</div>
-<button class="btn success" onclick="saveRule()">Save Rule</button>
-<button class="btn" onclick="showPage('rules')">Cancel</button>
-</div>
-
-<div class="page" id="page-sensors">
-<div id="sensor-grid" class="sensor-grid"></div>
-<p id="no-sensors" style="text-align:center;opacity:.4;padding:20px;font-size:.85em">Add sensors in Settings tab, then come back here.</p>
-</div>
-
-<div class="page" id="page-services">
-<div class="card"><div class="card-title">Call HA Service</div>
-<div class="field"><label>Service</label><input id="svc-service" placeholder="light.turn_on"></div>
-<div class="field"><label>Entity</label><select id="svc-entity-select"><option value="">--</option></select></div>
-<div class="field"><label>Data (JSON)</label><input id="svc-data" placeholder='{"brightness":200}'></div>
-<button class="btn success" onclick="callService()">Execute</button></div>
-<div class="card"><div class="card-title">History</div><div id="svc-history" style="font-size:.8em;opacity:.5">No calls yet</div></div>
-</div>
-
-<div class="page" id="page-settings">
-<div class="card"><div class="card-title">Connection</div>
-<div class="field"><label>Home Assistant URL</label><input id="cfg-url" placeholder="http://homeassistant.local:8123"><div class="hint">Local URL only</div></div>
-<div class="field"><label>Access Token</label><input id="cfg-token" type="password" placeholder="eyJ..."></div>
-<div class="field"><label>Webhook ID</label><input id="cfg-webhook" placeholder="super_productivity_01KX..."></div>
-</div>
-<div class="card"><div class="card-title">Display Sensors</div>
-<div class="field"><select id="cfg-sensor-picker" onchange="addSensorFromPicker()"><option value="">-- Pick a sensor to add --</option></select></div>
-<div id="cfg-sensor-list"></div>
-</div>
-<button class="btn success" onclick="saveSettings()">Save Settings</button>
-<button class="btn accent" onclick="testConn()">Test Connection</button>
-</div>
-
-<script>
-let config={haUrl:'',webhookId:'',rules:[],showSensors:''};
-let haToken=''; // Stored separately via secret API
-let editingRuleIdx=-1, projects=[], tags=[], svcHist=[];
-let haEntities={scenes:[],lights:[],switches:[],scripts:[],automations:[],sensors:[],media_players:[],all:[]};
-
-// Tabs
-document.querySelectorAll('.tab').forEach(tab=>{tab.addEventListener('click',()=>{
-document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-tab.classList.add('active');document.getElementById('page-'+tab.dataset.page).classList.add('active');
-// Refresh sensors when switching to that tab
-if(tab.dataset.page==='sensors')loadSensors();
-});});
-
-function showPage(name){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+name).classList.add('active');if(name==='rules'){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelector('[data-page=rules]').classList.add('active');}}
-
-// Config & API - all handled via window.parent.haBridge (plugin.js)
-// This ensures secrets stay in plugin.js and config persists across iframe reloads.
-let bridge = null;
-
-function getBridge() {
-  if (bridge) return bridge;
-  if (window.parent && window.parent.haBridge) { bridge = window.parent.haBridge; return bridge; }
-  return null;
-}
-
-async function loadConfig(){
-  const b = getBridge();
-  if (!b) { console.log('[HA UI] Bridge not available yet'); return; }
+  <div class="container">
+    <div class="header">
+      <h1>🎯 BusyBar Status Sync</h1>
+      <p>Keep your BusyBar status in sync with your work</p>
+    </div>
+    
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('status')">Status</button>
+      <button class="tab-btn" onclick="switchTab('rules')">Rules</button>
+      <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+    </div>
+    
+    <!-- STATUS TAB -->
+    <div id="status" class="tab-content active">
+      <div class="card">
+        <div id="connectionStatus"></div>
+        <div id="statusDisplay" class="status-display">
+          <div class="emoji">📡</div>
+          <div class="status-value">Loading...</div>
+          <div class="status-message">Connecting to BusyBar...</div>
+        </div>
+        
+        <div class="form-group">
+          <label>Update Status Manually</label>
+          <select id="statusSelect" onchange="updateStatusFromSelect()">
+            <option value="">Select a status...</option>
+            <option value="busy">Busy 🎯</option>
+            <option value="available">Available ✅</option>
+            <option value="break">Break ☕</option>
+            <option value="offline">Offline 🚫</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="statusMessage">Status Message (optional)</label>
+          <input type="text" id="statusMessage" placeholder="e.g., In a meeting">
+        </div>
+        
+        <div class="form-group">
+          <label for="statusEmoji">Emoji (optional)</label>
+          <input type="text" id="statusEmoji" placeholder="e.g., 🎤" maxlength="2">
+        </div>
+        
+        <button class="btn-primary" onclick="manualStatusUpdate()">Update Now</button>
+      </div>
+    </div>
+    
+    <!-- RULES TAB -->
+    <div id="rules" class="tab-content">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="font-size: 18px;">Automation Rules</h2>
+          <button class="btn-primary btn-small" onclick="showRuleForm()">+ Add Rule</button>
+        </div>
+        
+        <div id="ruleForm" style="display: none; border: 1px solid #ddd; border-radius: 6px; padding: 16px; margin-bottom: 20px; background: #f9fafb;">
+          <h3 style="margin-bottom: 16px; font-size: 16px;">Create New Rule</h3>
+          
+          <div class="form-group">
+            <label for="ruleName">Rule Name</label>
+            <input type="text" id="ruleName" placeholder="e.g., Start Deep Work">
+          </div>
+          
+          <div class="form-group">
+            <label for="ruleTrigger">When (Trigger)</label>
+            <select id="ruleTrigger" onchange="updateTriggerConditions()">
+              <option value="">Select trigger...</option>
+              <option value="task_start">Task Started</option>
+              <option value="task_stop">Task Stopped</option>
+              <option value="task_complete">Task Completed</option>
+              <option value="all_done">All Today's Tasks Done</option>
+              <option value="timer">Timer Threshold</option>
+              <option value="idle">Idle Time</option>
+              <option value="day_end">Day Ended</option>
+            </select>
+          </div>
+          
+          <div id="conditionsContainer" style="display: none;">
+            <div class="form-group">
+              <label for="ruleCondProject">Only for Project (optional)</label>
+              <input type="text" id="ruleCondProject" placeholder="Project name or ID">
+            </div>
+            <div class="form-group">
+              <label for="ruleCondTag">Only for Tag (optional)</label>
+              <input type="text" id="ruleCondTag" placeholder="Tag name or ID">
+            </div>
+            <div id="timerCondition" style="display: none;" class="form-group">
+              <label for="ruleCondMinutes">After (minutes)</label>
+              <input type="number" id="ruleCondMinutes" placeholder="25" min="1">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="ruleStatus">Then Set Status To</label>
+            <select id="ruleStatus">
+              <option value="busy">Busy</option>
+              <option value="available">Available</option>
+              <option value="break">Break</option>
+              <option value="offline">Offline</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="ruleEmoji">Emoji (optional)</label>
+            <input type="text" id="ruleEmoji" placeholder="🎯" maxlength="2">
+          </div>
+          
+          <div class="form-group">
+            <label for="ruleMessage">Message (optional)</label>
+            <input type="text" id="ruleMessage" placeholder="e.g., Deep work - {title}">
+            <small style="color: #999; display: block; margin-top: 4px;">Use {title} for task name, {project} for project</small>
+          </div>
+          
+          <div class="button-group">
+            <button class="btn-primary" onclick="saveRule()">Save Rule</button>
+            <button class="btn-secondary" onclick="hideRuleForm()">Cancel</button>
+          </div>
+        </div>
+        
+        <div id="rulesList"></div>
+        
+        <div id="noRules" class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <div class="empty-state-text">No rules yet</div>
+          <button class="btn-primary" onclick="showRuleForm()">Create Your First Rule</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- SETTINGS TAB -->
+    <div id="settings" class="tab-content">
+      <div class="card">
+        <h2 style="margin-bottom: 20px; font-size: 18px;">Settings</h2>
+        
+        <div id="settingsAlert"></div>
+        
+        <div class="form-group">
+          <label for="busybarUrl">BusyBar API URL</label>
+          <input type="text" id="busybarUrl" placeholder="https://api.busy.app/busybar" value="https://api.busy.app/busybar">
+          <small style="color: #999; display: block; margin-top: 4px;">Leave default unless you have a custom endpoint</small>
+        </div>
+        
+        <div class="form-group">
+          <label for="busybarToken">BusyBar API Token</label>
+          <input type="password" id="busybarToken" placeholder="Enter your BusyBar API token">
+          <small style="color: #999; display: block; margin-top: 4px;">Get this from your BusyBar account settings. Stored securely, never synced.</small>
+        </div>
+        
+        <div class="button-group">
+          <button class="btn-primary" onclick="testConnection()">Test Connection</button>
+          <button class="btn-secondary" onclick="saveSettings()">Save Settings</button>
+        </div>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        
+        <h3 style="margin-bottom: 16px; font-size: 16px;">Default Status Maps</h3>
+        <p style="font-size: 14px; color: #666; margin-bottom: 16px;">Customize what happens automatically when tasks start/stop:</p>
+        
+        <div class="form-group">
+          <label>When Task Starts</label>
+          <select id="mapTaskStart">
+            <option value="">Default: Busy (🎯 Working on: {title})</option>
+            <option value="custom">Custom...</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>When Task Stops</label>
+          <select id="mapTaskStop">
+            <option value="">Default: Available (✅ Back online)</option>
+            <option value="custom">Custom...</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>When All Tasks Done</label>
+          <select id="mapAllDone">
+            <option value="">Default: No change</option>
+            <option value="custom">Custom...</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
   
-  // Wait for plugin.js to finish loading config
-  let attempts = 0;
-  while (!b.isReady() && attempts < 30) { await new Promise(r => setTimeout(r, 100)); attempts++; }
-  
-  const cfg = b.getConfig();
-  config.haUrl = cfg.haUrl || '';
-  config.webhookId = cfg.webhookId || '';
-  config.rules = cfg.rules || [];
-  config.showSensors = cfg.showSensors || '';
-  haToken = b.getTokenMasked(); // only get masked version for display
-  console.log('[HA UI] Config from bridge:', config.rules.length, 'rules, URL:', config.haUrl ? 'set' : 'empty');
-  populateSettings();
-}
-
-async function saveConfig(){
-  const b = getBridge();
-  if (!b) { console.log('[HA UI] No bridge'); return; }
-  const tokenInput = document.getElementById('cfg-token').value.trim();
-  await b.saveSettings({
-    haUrl: config.haUrl,
-    webhookId: config.webhookId,
-    showSensors: config.showSensors,
-    token: tokenInput || undefined, // only send if user entered/changed it
-  });
-  // Save rules separately
-  await b.saveRules(config.rules);
-  console.log('[HA UI] Saved via bridge');
-}
-
-function populateSettings(){
-document.getElementById('cfg-url').value=config.haUrl||'';
-document.getElementById('cfg-token').value=''; // never pre-fill token for security
-document.getElementById('cfg-token').placeholder=haToken?'Token saved (enter new to change)':'Enter token...';
-document.getElementById('cfg-webhook').value=config.webhookId||'';
-renderSensorList();
-}
-async function saveSettings(){
-config.haUrl=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');
-config.webhookId=document.getElementById('cfg-webhook').value.trim();
-await saveConfig();
-PluginAPI.showSnack({msg:'Settings saved!',type:'SUCCESS'});
-await fetchHAEntities();
-checkConn();loadSensors();populateSensorPicker();
-}
-
-// HA API - proxied through plugin.js bridge
-async function haApi(method,path,body=null){
-  const b = getBridge();
-  if (!b) return null;
-  return await b.callHaApi(method, path, body);
-}
-
-async function fetchHAEntities(){
-const b = getBridge();
-if(!b)return;
-const entities = await b.fetchEntities();
-if(!entities)return;
-haEntities.scenes=entities.scenes||[];
-haEntities.lights=entities.lights||[];
-haEntities.switches=entities.switches||[];
-haEntities.scripts=entities.scripts||[];
-haEntities.automations=entities.automations||[];
-haEntities.sensors=entities.sensors||[];
-haEntities.media_players=entities.media_players||[];
-buildEntitySelect('svc-entity-select',['lights','switches','scripts','scenes','automations','media_players'],'');
-populateSensorPicker();
-console.log('[HA UI] Loaded entities from bridge');
-}
-
-function entityName(e){return e.attributes?.friendly_name||e.entity_id.split('.').pop().replace(/_/g,' ');}
-
-function buildEntitySelect(id,domains,currentValue){
-const el=document.getElementById(id);if(!el)return;
-const entities=domains.flatMap(d=>haEntities[d]||[]);
-if(!entities.length){el.innerHTML='<option value="">'+(currentValue||'-- Connect first --')+'</option>';if(currentValue)el.innerHTML+='<option value="'+currentValue+'" selected>'+currentValue+'</option>';return;}
-let html='<option value="">-- Select --</option>';
-const grouped={};entities.forEach(e=>{const d=e.entity_id.split('.')[0];if(!grouped[d])grouped[d]=[];grouped[d].push(e);});
-Object.entries(grouped).sort().forEach(([domain,ents])=>{
-html+='<optgroup label="'+domain+'">';
-ents.sort((a,b)=>entityName(a).localeCompare(entityName(b)));
-ents.forEach(e=>{const sel=e.entity_id===currentValue?' selected':'';html+='<option value="'+e.entity_id+'"'+sel+'>'+entityName(e)+'</option>';});
-html+='</optgroup>';});
-el.innerHTML=html;}
-
-function buildSimpleSelect(id,entitiesKey,currentValue){
-const el=document.getElementById(id);if(!el)return;
-const entities=haEntities[entitiesKey]||[];
-if(!entities.length){el.innerHTML='<option value="">-- None found --</option>';return;}
-let html='<option value="">-- Select --</option>';
-entities.sort((a,b)=>entityName(a).localeCompare(entityName(b)));
-entities.forEach(e=>{const sel=e.entity_id===currentValue?' selected':'';html+='<option value="'+e.entity_id+'"'+sel+'>'+entityName(e)+'</option>';});
-el.innerHTML=html;}
-
-async function checkConn(){
-const badge=document.getElementById('conn-badge'),dot=document.getElementById('conn-dot'),txt=document.getElementById('conn-text');
-const b = getBridge();
-if(!b||!config.haUrl){badge.className='badge err';dot.className='dot err';txt.textContent='Not set';return false;}
-const r=await b.testConnection();
-if(r&&r.ok){badge.className='badge ok';dot.className='dot ok';txt.textContent='v'+r.version;return true;}
-badge.className='badge err';dot.className='dot err';txt.textContent='Offline';return false;}
-async function testConn(){const ok=await checkConn();if(ok){const b=getBridge();const r=await b.testConnection();PluginAPI.showSnack({msg:'Connected: HA '+r.version,type:'SUCCESS'});}else PluginAPI.showSnack({msg:'Cannot reach HA',type:'ERROR'});}
-
-// Sensors
-function populateSensorPicker(){
-const el=document.getElementById('cfg-sensor-picker');if(!el)return;
-const sensors=haEntities.sensors||[];
-if(!sensors.length){el.innerHTML='<option value="">-- Save settings & connect first --</option>';return;}
-let html='<option value="">-- Pick a sensor to add --</option>';
-sensors.sort((a,b)=>entityName(a).localeCompare(entityName(b)));
-sensors.forEach(s=>{html+='<option value="'+s.entity_id+'">'+entityName(s)+' ('+s.entity_id+')</option>';});
-el.innerHTML=html;}
-
-function addSensorFromPicker(){
-const p=document.getElementById('cfg-sensor-picker');const val=p.value;if(!val)return;
-const current=(config.showSensors||'').split(',').map(s=>s.trim()).filter(Boolean);
-if(!current.includes(val)){current.push(val);config.showSensors=current.join(',');renderSensorList();}
-p.value='';}
-
-function removeSensor(entityId){
-const current=(config.showSensors||'').split(',').map(s=>s.trim()).filter(Boolean);
-config.showSensors=current.filter(s=>s!==entityId).join(',');renderSensorList();}
-
-function renderSensorList(){
-const c=document.getElementById('cfg-sensor-list');if(!c)return;
-const sensors=(config.showSensors||'').split(',').map(s=>s.trim()).filter(Boolean);
-if(!sensors.length){c.innerHTML='<div style="opacity:.4;padding:8px;font-size:.85em">No sensors added yet</div>';return;}
-c.innerHTML=sensors.map(s=>'<div class="row"><span style="font-size:.85em">'+s+'</span><button class="btn sm err" onclick="removeSensor(\''+s+'\')">x</button></div>').join('');}
-
-async function loadSensors(){
-const grid=document.getElementById('sensor-grid'),ns=document.getElementById('no-sensors');
-const ids=(config.showSensors||'').split(',').map(s=>s.trim()).filter(Boolean);
-const b=getBridge();
-if(!ids.length||!b||!config.haUrl){grid.innerHTML='';ns.style.display='block';return;}
-ns.style.display='none';grid.innerHTML='';
-const states=await b.getSensorStates(ids);
-for(let i=0;i<ids.length;i++){
-const id=ids[i];const st=states[i];
-const c=document.createElement('div');c.className='sensor-card';
-if(st){const nm=st.attributes?.friendly_name||id.split('.').pop().replace(/_/g,' ');const v=st.state+(st.attributes?.unit_of_measurement?' '+st.attributes.unit_of_measurement:'');c.innerHTML='<div class="label">'+nm+'</div><div class="value">'+v+'</div>';}
-else c.innerHTML='<div class="label">'+id+'</div><div class="value">--</div>';
-grid.appendChild(c);}}
-
-// Rules
-function renderRules(){
-const list=document.getElementById('rules-list');
-if(!config.rules.length){list.innerHTML='<p style="text-align:center;opacity:.4;padding:20px">No rules yet. Add one to automate your smart home based on your tasks.</p>';return;}
-const trigLabels={task_start:'Start',task_stop:'Stop',task_switch:'Switch',task_complete:'Complete',task_created:'Created',task_updated:'Updated',task_deleted:'Deleted',tags_changed:'Tags',project_changed:'Project',due_date_changed:'Due Date',estimate_changed:'Estimate',estimate_exceeded:'Over Est.',notes_changed:'Notes',first_task_of_day:'1st Task',all_done:'All Done',timer:'Timer',idle:'Idle',context_switch:'Context',project_list_changed:'Projects',day_end:'Day End'};
-const actLabels={scene:'Scene',automation:'Automation',script:'Script',toggle:'Toggle',light:'Light',light_off:'Light Off',media:'Media',tts:'TTS',service:'Service',notify:'Notify'};
-list.innerHTML=config.rules.map((r,i)=>{
-const trig=trigLabels[r.trigger]||r.trigger;
-const mins=r.conditions?.minutes?` (${r.conditions.minutes}m)`:'';
-const act=actLabels[r.action?.type]||'?';
-const target=r.action?.entity||r.action?.service||r.action?.message||'';
-const short=target.length>25?target.slice(0,25)+'...':target;
-return `<div class="rule-card"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="rule-name">${r.name||'Unnamed'}</div><div class="rule-desc">${trig}${mins} → ${act}: ${short}</div></div><div class="toggle ${r.enabled?'on':''}" onclick="toggleRule(${i})"></div></div><div class="rule-actions"><button class="btn sm accent" onclick="editRule(${i})">Edit</button><button class="btn sm err" onclick="deleteRule(${i})">Del</button></div></div>`;}).join('');}
-
-async function toggleRule(i){config.rules[i].enabled=!config.rules[i].enabled;await saveConfig();renderRules();}
-async function deleteRule(i){config.rules.splice(i,1);await saveConfig();renderRules();}
-
-async function loadProjectsAndTags(){
-try{projects=await PluginAPI.getAllProjects();}catch(e){projects=[];}
-try{tags=await PluginAPI.getAllTags();}catch(e){tags=[];}}
-
-function populateDropdowns(){
-const ps=document.getElementById('re-project');ps.innerHTML='<option value="">Any</option>'+projects.map(p=>`<option value="${p.id}">${p.title}</option>`).join('');
-const ts=document.getElementById('re-tag');ts.innerHTML='<option value="">Any</option>'+tags.map(t=>`<option value="${t.id}">${t.title}</option>`).join('');}
-
-function toggleTimerField(){const t=document.getElementById('re-trigger').value;document.getElementById('re-timer-field').style.display=(t==='timer'||t==='idle')?'':'none';}
-function toggleActionFields(){
-const t=document.getElementById('re-action-type').value;
-document.querySelectorAll('.action-field').forEach(f=>f.style.display='none');
-const show={scene:['af-scene'],automation:['af-automation'],script:['af-script'],toggle:['af-toggle'],light:['af-light','af-brightness','af-color-temp'],light_off:['af-light'],media:['af-media','af-media-action'],tts:['af-tts-entity','af-tts-msg'],service:['af-service','af-entity'],notify:['af-notify']};
-(show[t]||[]).forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';});}
-
-function populateActionDropdowns(currentEntity){
-buildSimpleSelect('re-scene','scenes',currentEntity);
-buildSimpleSelect('re-automation','automations',currentEntity);
-buildSimpleSelect('re-script','scripts',currentEntity);
-buildEntitySelect('re-toggle-entity',['lights','switches','scenes'],currentEntity);
-buildSimpleSelect('re-light-entity','lights',currentEntity);
-buildSimpleSelect('re-media-entity','media_players',currentEntity);
-buildSimpleSelect('re-tts-speaker','media_players',currentEntity);
-buildEntitySelect('re-entity',['lights','switches','scripts','scenes','automations'],currentEntity);}
-
-function addRule(){
-editingRuleIdx=-1;
-document.getElementById('re-name').value='';document.getElementById('re-trigger').value='task_start';
-document.getElementById('re-minutes').value='';document.getElementById('re-project').value='';
-document.getElementById('re-tag').value='';document.getElementById('re-title').value='';
-document.getElementById('re-action-type').value='scene';document.getElementById('re-service').value='';
-document.getElementById('re-message').value='';document.getElementById('re-brightness').value='';
-document.getElementById('re-color-temp').value='';document.getElementById('re-tts-message').value='';
-toggleActionFields();toggleTimerField();populateDropdowns();populateActionDropdowns('');showPage('editor');}
-
-function editRule(i){
-editingRuleIdx=i;const r=config.rules[i];
-document.getElementById('re-name').value=r.name||'';document.getElementById('re-trigger').value=r.trigger||'task_start';
-document.getElementById('re-minutes').value=r.conditions?.minutes||'';document.getElementById('re-project').value=r.conditions?.projectId||'';
-document.getElementById('re-tag').value=r.conditions?.tagId||'';document.getElementById('re-title').value=r.conditions?.titleContains||'';
-document.getElementById('re-action-type').value=r.action?.type||'scene';document.getElementById('re-service').value=r.action?.service||'';
-document.getElementById('re-message').value=r.action?.message||'';
-document.getElementById('re-brightness').value=r.action?.brightness||'';
-document.getElementById('re-color-temp').value=r.action?.temperature||'';
-document.getElementById('re-tts-message').value=r.action?.message||'';
-if(r.action?.mediaAction)document.getElementById('re-media-action').value=r.action.mediaAction;
-toggleActionFields();toggleTimerField();populateDropdowns();populateActionDropdowns(r.action?.entity||'');showPage('editor');}
-
-async function saveRule(){
-const rule={id:editingRuleIdx>=0?config.rules[editingRuleIdx].id:'rule_'+Date.now(),name:document.getElementById('re-name').value||'Unnamed',enabled:editingRuleIdx>=0?config.rules[editingRuleIdx].enabled:true,trigger:document.getElementById('re-trigger').value,conditions:{},action:{}};
-const proj=document.getElementById('re-project').value,tag=document.getElementById('re-tag').value,title=document.getElementById('re-title').value.trim(),mins=document.getElementById('re-minutes').value;
-if(proj)rule.conditions.projectId=proj;if(tag)rule.conditions.tagId=tag;if(title)rule.conditions.titleContains=title;if(mins)rule.conditions.minutes=parseInt(mins);
-const at=document.getElementById('re-action-type').value;rule.action.type=at;
-switch(at){
-case'scene':rule.action.entity=document.getElementById('re-scene').value;break;
-case'automation':rule.action.entity=document.getElementById('re-automation').value;break;
-case'script':rule.action.entity=document.getElementById('re-script').value;break;
-case'toggle':rule.action.entity=document.getElementById('re-toggle-entity').value;break;
-case'light':rule.action.entity=document.getElementById('re-light-entity').value;rule.action.brightness=document.getElementById('re-brightness').value;rule.action.temperature=document.getElementById('re-color-temp').value;break;case'light_off':rule.action.entity=document.getElementById('re-light-entity').value;break;
-case'media':rule.action.entity=document.getElementById('re-media-entity').value;rule.action.mediaAction=document.getElementById('re-media-action').value;break;
-case'tts':rule.action.entity=document.getElementById('re-tts-speaker').value;rule.action.message=document.getElementById('re-tts-message').value;break;
-case'service':rule.action.service=document.getElementById('re-service').value.trim();rule.action.entity=document.getElementById('re-entity').value;break;
-case'notify':rule.action.message=document.getElementById('re-message').value.trim();break;
-}
-if(editingRuleIdx>=0)config.rules[editingRuleIdx]=rule;else config.rules.push(rule);
-await saveConfig();renderRules();showPage('rules');PluginAPI.showSnack({msg:'Rule saved!',type:'SUCCESS'});}
-
-// Services
-async function callService(){
-const svc=document.getElementById('svc-service').value.trim(),ent=document.getElementById('svc-entity-select').value,extra=document.getElementById('svc-data').value.trim();
-if(!svc)return;const[domain,s]=svc.split('.');if(!domain||!s){PluginAPI.showSnack({msg:'Format: domain.service',type:'WARN'});return;}
-let data={};if(ent)data.entity_id=ent;if(extra)try{Object.assign(data,JSON.parse(extra));}catch(e){PluginAPI.showSnack({msg:'Invalid JSON',type:'ERROR'});return;}
-const r=await haApi('POST',`services/${domain}/${s}`,data);
-svcHist.unshift(`${new Date().toLocaleTimeString()} ${svc}${ent?' ('+ent+')':''}: ${r!==null?'OK':'FAIL'}`);
-if(svcHist.length>8)svcHist.pop();document.getElementById('svc-history').innerHTML=svcHist.join('<br>');
-PluginAPI.showSnack({msg:r!==null?`${svc} OK`:'Failed',type:r!==null?'SUCCESS':'ERROR'});}
-
-// Init
-async function init(){await loadConfig();const connected=await checkConn();if(connected)await fetchHAEntities();await loadProjectsAndTags();renderRules();if(connected)loadSensors();}
-
-// Wait for both PluginAPI (for SP features) and haBridge (for config/HA API)
-function waitForReady() {
-  let attempts = 0;
-  const interval = setInterval(() => {
-    attempts++;
-    const hasApi = typeof PluginAPI !== 'undefined';
-    const hasBridge = window.parent && window.parent.haBridge;
-    if (hasApi && hasBridge) {
-      clearInterval(interval);
-      init();
-    } else if (attempts > 50) {
-      clearInterval(interval);
-      // Try init anyway with whatever is available
-      console.log('[HA UI] Timeout waiting for APIs, attempting init');
-      init();
+  <script>
+    const BRIDGE = window.parent.busybarBridge;
+    
+    // Initialize
+    async function init() {
+      if (!BRIDGE) {
+        showAlert('settings', 'Plugin bridge not available', 'error');
+        return;
+      }
+      
+      if (!BRIDGE.isReady()) {
+        setTimeout(init, 100);
+        return;
+      }
+      
+      loadConfig();
+      updateStatusDisplay();
+      refreshRules();
     }
-  }, 100);
-}
-waitForReady();
-setInterval(()=>{if(config.haUrl&&config.haToken)loadSensors();},60000);
-</script>
+    
+    async function loadConfig() {
+      const config = BRIDGE.getConfig();
+      document.getElementById('busybarUrl').value = config.busybarUrl || 'https://api.busy.app/busybar';
+    }
+    
+    async function updateStatusDisplay() {
+      try {
+        const status = await BRIDGE.getCurrentStatus();
+        if (status) {
+          const emoji = status.emoji || '📡';
+          const statusVal = status.status || 'unknown';
+          const message = status.message || '';
+          document.getElementById('statusDisplay').innerHTML = `
+            <div class="emoji">${emoji}</div>
+            <div class="status-value">${statusVal}</div>
+            <div class="status-message">${message}</div>
+          `;
+          document.getElementById('connectionStatus').innerHTML = `
+            <div class="connection-status connected">
+              <span class="status-dot"></span>
+              Connected to BusyBar
+            </div>
+          `;
+        }
+      } catch (e) {
+        document.getElementById('connectionStatus').innerHTML = `
+          <div class="connection-status disconnected">
+            <span class="status-dot"></span>
+            Not connected (configure in Settings)
+          </div>
+        `;
+      }
+    }
+    
+    async function manualStatusUpdate() {
+      const status = document.getElementById('statusSelect').value;
+      const emoji = document.getElementById('statusEmoji').value;
+      const message = document.getElementById('statusMessage').value;
+      
+      if (!status) {
+        showAlert('status', 'Please select a status', 'error');
+        return;
+      }
+      
+      try {
+        await BRIDGE.updateStatus(status, emoji, message);
+        showAlert('status', 'Status updated!', 'success');
+        setTimeout(updateStatusDisplay, 500);
+      } catch (e) {
+        showAlert('status', 'Failed to update status: ' + e.message, 'error');
+      }
+    }
+    
+    function updateStatusFromSelect() {
+      const status = document.getElementById('statusSelect').value;
+      const emojis = { busy: '🎯', available: '✅', break: '☕', offline: '🚫' };
+      document.getElementById('statusEmoji').value = emojis[status] || '';
+    }
+    
+    async function testConnection() {
+      try {
+        const result = await BRIDGE.testConnection();
+        if (result.ok) {
+          showAlert('settings', 'Connected! Current status: ' + result.currentStatus, 'success');
+        } else {
+          showAlert('settings', 'Connection failed. Check your token and URL.', 'error');
+        }
+      } catch (e) {
+        showAlert('settings', 'Connection error: ' + e.message, 'error');
+      }
+    }
+    
+    async function saveSettings() {
+      const settings = {
+        busybarUrl: document.getElementById('busybarUrl').value,
+        token: document.getElementById('busybarToken').value
+      };
+      
+      try {
+        await BRIDGE.saveSettings(settings);
+        showAlert('settings', 'Settings saved!', 'success');
+      } catch (e) {
+        showAlert('settings', 'Failed to save: ' + e.message, 'error');
+      }
+    }
+    
+    // Rules
+    let currentRules = [];
+    
+    async function refreshRules() {
+      const config = BRIDGE.getConfig();
+      currentRules = config.rules || [];
+      renderRules();
+    }
+    
+    function renderRules() {
+      const container = document.getElementById('rulesList');
+      const empty = document.getElementById('noRules');
+      
+      if (currentRules.length === 0) {
+        container.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+      }
+      
+      empty.style.display = 'none';
+      container.innerHTML = currentRules.map((rule, idx) => `
+        <div class="rule-item ${rule.enabled ? '' : 'disabled'}">
+          <div class="rule-header">
+            <span class="rule-name">${rule.name}</span>
+            <label class="toggle-switch">
+              <input type="checkbox" ${rule.enabled ? 'checked' : ''} onchange="toggleRule(${idx}, this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="rule-details">
+            <strong>Trigger:</strong> ${rule.trigger}<br>
+            <strong>Status:</strong> ${rule.action?.status || 'N/A'} ${rule.action?.emoji || ''}<br>
+            ${rule.action?.message ? `<strong>Message:</strong> ${rule.action.message}<br>` : ''}
+            ${rule.conditions?.projectId ? `<strong>Project:</strong> ${rule.conditions.projectId}<br>` : ''}
+            ${rule.conditions?.tagId ? `<strong>Tag:</strong> ${rule.conditions.tagId}` : ''}
+          </div>
+          <div class="rule-actions">
+            <button class="btn-secondary btn-small" onclick="editRule(${idx})">Edit</button>
+            <button class="btn-danger btn-small" onclick="deleteRule(${idx})">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function showRuleForm() {
+      document.getElementById('ruleForm').style.display = 'block';
+    }
+    
+    function hideRuleForm() {
+      document.getElementById('ruleForm').style.display = 'none';
+      clearRuleForm();
+    }
+    
+    function clearRuleForm() {
+      document.getElementById('ruleName').value = '';
+      document.getElementById('ruleTrigger').value = '';
+      document.getElementById('ruleStatus').value = 'busy';
+      document.getElementById('ruleEmoji').value = '';
+      document.getElementById('ruleMessage').value = '';
+      document.getElementById('ruleCondProject').value = '';
+      document.getElementById('ruleCondTag').value = '';
+      document.getElementById('ruleCondMinutes').value = '';
+      document.getElementById('conditionsContainer').style.display = 'none';
+    }
+    
+    function updateTriggerConditions() {
+      const trigger = document.getElementById('ruleTrigger').value;
+      const container = document.getElementById('conditionsContainer');
+      const timerCond = document.getElementById('timerCondition');
+      
+      if (['task_start', 'task_stop', 'task_complete'].includes(trigger)) {
+        container.style.display = 'block';
+        timerCond.style.display = 'none';
+      } else if (['timer', 'idle'].includes(trigger)) {
+        container.style.display = 'block';
+        timerCond.style.display = 'block';
+      } else {
+        container.style.display = 'none';
+      }
+    }
+    
+    async function saveRule() {
+      const name = document.getElementById('ruleName').value;
+      const trigger = document.getElementById('ruleTrigger').value;
+      
+      if (!name || !trigger) {
+        showAlert('rules', 'Please fill in name and trigger', 'error');
+        return;
+      }
+      
+      const rule = {
+        id: Date.now().toString(),
+        name,
+        trigger,
+        enabled: true,
+        action: {
+          status: document.getElementById('ruleStatus').value,
+          emoji: document.getElementById('ruleEmoji').value,
+          message: document.getElementById('ruleMessage').value
+        },
+        conditions: {}
+      };
+      
+      if (document.getElementById('ruleCondProject').value) {
+        rule.conditions.projectId = document.getElementById('ruleCondProject').value;
+      }
+      if (document.getElementById('ruleCondTag').value) {
+        rule.conditions.tagId = document.getElementById('ruleCondTag').value;
+      }
+      if (document.getElementById('ruleCondMinutes').value) {
+        rule.conditions.minutes = parseInt(document.getElementById('ruleCondMinutes').value);
+      }
+      
+      currentRules.push(rule);
+      
+      try {
+        await BRIDGE.saveRules(currentRules);
+        showAlert('rules', 'Rule created!', 'success');
+        hideRuleForm();
+        renderRules();
+      } catch (e) {
+        showAlert('rules', 'Failed to save: ' + e.message, 'error');
+      }
+    }
+    
+    async function toggleRule(idx, enabled) {
+      currentRules[idx].enabled = enabled;
+      try {
+        await BRIDGE.saveRules(currentRules);
+        renderRules();
+      } catch (e) {
+        showAlert('rules', 'Failed to update: ' + e.message, 'error');
+      }
+    }
+    
+    async function deleteRule(idx) {
+      if (confirm('Delete this rule?')) {
+        currentRules.splice(idx, 1);
+        try {
+          await BRIDGE.saveRules(currentRules);
+          renderRules();
+        } catch (e) {
+          showAlert('rules', 'Failed to delete: ' + e.message, 'error');
+        }
+      }
+    }
+    
+    // UI
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tab).classList.add('active');
+      event.target.classList.add('active');
+    }
+    
+    function showAlert(tabId, message, type) {
+      const alertDiv = document.createElement('div');
+      alertDiv.className = `alert alert-${type}`;
+      alertDiv.textContent = message;
+      
+      const container = document.getElementById(tabId).querySelector('.card');
+      container.insertBefore(alertDiv, container.firstChild);
+      
+      setTimeout(() => alertDiv.remove(), 4000);
+    }
+    
+    // Start
+    init();
+    setInterval(updateStatusDisplay, 5000);
+  </script>
 </body>
 </html>
