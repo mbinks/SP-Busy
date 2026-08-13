@@ -76,25 +76,25 @@ async function saveToken(token) {
 async function busybarApi(method, path, body = null) {
   if (!busybarToken) return null;
   
-  // Ensure path starts with /busybar/
-  if (!path.startsWith('/busybar/')) {
-    path = '/busybar' + (path.startsWith('/') ? path : '/' + path);
+  // Build full URL: base URL + path
+  let fullPath = path;
+  if (!fullPath.startsWith('/')) {
+    fullPath = '/' + fullPath;
   }
   
-  // Add token as query parameter (barApiToken)
-  const separator = path.includes('?') ? '&' : '?';
-  const url = config.busybarUrl.replace(/\/$/, '') + path + separator + 'barApiToken=' + encodeURIComponent(busybarToken);
+  const url = config.busybarUrl.replace(/\/$/, '') + fullPath;
   
   const opts = { 
     method, 
     headers: { 
-      'Content-Type': 'application/json' 
+      'Content-Type': 'application/json',
+      'barApiToken': busybarToken
     } 
   };
   if (body) opts.body = JSON.stringify(body);
   
   try { 
-    console.log('[BusyBar] API call:', method, path);
+    console.log('[BusyBar] API call:', method, url);
     const r = await fetch(url, opts); 
     const responseText = await r.text();
     
@@ -402,5 +402,5 @@ async function onFinishDay(data) {
 // ============================================================
 
 loadConfig().then(() => {
-  console.log(`[BusyBar v1.0] Ready. ${config.rules.length} rules. Token: ${busybarToken ? 'set' : 'not set'}.`);
+  console.log(`[BusyBar v1.0.1] Ready. ${config.rules.length} rules. Token: ${busybarToken ? 'set' : 'not set'}.`);
 });
