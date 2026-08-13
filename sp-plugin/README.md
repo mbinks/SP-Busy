@@ -1,3 +1,6 @@
+# ALL I DID WAS SAY YES TO COPILOT A LOT YOU PROBABLY SHOULDN'T USE THIS
+
+
 # BusyBar Status Sync - Super Productivity Plugin
 
 Automatically sync your SuperProductivity task timer status with BusyBar. When you start a task, your BusyBar status updates to "busy"; when you stop, it changes to "available". Perfect for keeping your team informed about your availability.
