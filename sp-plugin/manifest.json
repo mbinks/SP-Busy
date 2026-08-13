@@ -1,7 +1,7 @@
 {
   "id": "busybar-bridge",
   "name": "BusyBar Status Sync",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Sync SuperProductivity task timer status with BusyBar. Automatically update your BusyBar status when you start/stop tasks, based on task state and custom rules.",
   "manifestVersion": 1,
   "minSupVersion": "10.0.0",
