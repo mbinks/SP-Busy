@@ -87,8 +87,8 @@ async function busybarApi(method, path, body = null) {
   const opts = { 
     method, 
     headers: { 
-      'Content-Type': 'application/json',
-      'barApiToken': busybarToken
+      'Accept': 'application/json',
+      'Authorization': 'Bearer ' + busybarToken,
     } 
   };
   if (body) opts.body = JSON.stringify(body);
