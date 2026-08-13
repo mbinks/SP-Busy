@@ -13,7 +13,7 @@
 // CONFIG & SECRETS
 // ============================================================
 
-let config = { busybarUrl: 'https://api.busy.app/busybar', rules: [], statusMap: {} };
+let config = { busybarUrl: 'https://api.busy.app', rules: [], statusMap: {} };
 let busybarToken = '';
 let configReady = false;
 
@@ -75,18 +75,40 @@ async function saveToken(token) {
 
 async function busybarApi(method, path, body = null) {
   if (!busybarToken) return null;
+  
+  // Ensure path starts with /busybar/
+  if (!path.startsWith('/busybar/')) {
+    path = '/busybar' + (path.startsWith('/') ? path : '/' + path);
+  }
+  
+  // Add token as query parameter (barApiToken)
+  const separator = path.includes('?') ? '&' : '?';
+  const url = config.busybarUrl.replace(/\/$/, '') + path + separator + 'barApiToken=' + encodeURIComponent(busybarToken);
+  
   const opts = { 
     method, 
     headers: { 
-      'Authorization': `Bearer ${busybarToken}`,
       'Content-Type': 'application/json' 
     } 
   };
   if (body) opts.body = JSON.stringify(body);
+  
   try { 
-    const url = config.busybarUrl.replace(/\/$/, '') + path;
+    console.log('[BusyBar] API call:', method, path);
     const r = await fetch(url, opts); 
-    return r.ok ? await r.json() : null; 
+    const responseText = await r.text();
+    
+    if (!r.ok) {
+      console.log('[BusyBar] API error:', r.status, responseText);
+      return null;
+    }
+    
+    try {
+      return responseText ? JSON.parse(responseText) : { ok: true };
+    } catch (e) {
+      console.log('[BusyBar] JSON parse error:', e);
+      return { ok: true };
+    }
   }
   catch (e) { 
     console.log('[BusyBar] API error:', e);
@@ -96,6 +118,7 @@ async function busybarApi(method, path, body = null) {
 
 /**
  * Update BusyBar status based on task state
+ * Sets the smart home switch state to indicate busy/available status
  * @param {string} status - Status value to set (e.g., 'busy', 'available', 'custom')
  * @param {string} emoji - Optional emoji to display
  * @param {string} message - Optional status message
@@ -103,13 +126,14 @@ async function busybarApi(method, path, body = null) {
 async function updateBusyBarStatus(status, emoji = '', message = '') {
   if (!busybarToken) return;
   try {
-    const payload = { status };
-    if (emoji) payload.emoji = emoji;
-    if (message) payload.message = message;
+    // Use smart home switch to indicate status
+    // true = busy, false = available
+    const isBusy = (status === 'busy' || status === 'offline');
+    const payload = { on: isBusy };
     
-    const result = await busybarApi('PUT', '/status', payload);
+    const result = await busybarApi('POST', '/busybar/smart_home/switch', payload);
     if (result) {
-      console.log('[BusyBar] Status updated:', status);
+      console.log('[BusyBar] Status updated:', status, '(switch ' + (isBusy ? 'on' : 'off') + ')');
       return result;
     }
   } catch (e) { console.log('[BusyBar] Status update error:', e); }
@@ -142,19 +166,19 @@ const busybarBridge = {
     return true;
   },
   
-  // Test connection
+  // Test connection by getting account info
   testConnection: async () => {
     try {
-      const result = await busybarApi('GET', '/status');
-      return result ? { ok: true, currentStatus: result.status } : { ok: false };
+      const result = await busybarApi('GET', '/busybar/account/info');
+      return result ? { ok: true, account: result } : { ok: false };
     } catch (e) {
       return { ok: false, error: e.message };
     }
   },
   
-  // Get current status
+  // Get current status from smart home switch
   getCurrentStatus: async () => {
-    return await busybarApi('GET', '/status');
+    return await busybarApi('GET', '/busybar/smart_home/switch');
   },
   
   // Update status
