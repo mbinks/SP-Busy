@@ -1,88 +1,123 @@
-# Home Assistant Bridge - Super Productivity Plugin
+# BusyBar Status Sync - Super Productivity Plugin
 
-A rules-based automation engine that connects Super Productivity to Home Assistant, letting your task activity control your smart home.
+Automatically sync your SuperProductivity task timer status with BusyBar. When you start a task, your BusyBar status updates to "busy"; when you stop, it changes to "available". Perfect for keeping your team informed about your availability.
 
 ## Installation
 
-1. Download `sp-plugin.zip` from the [latest release](https://github.com/jloops412/ha-super-productivity/releases)
+1. Download `sp-plugin.zip` from the [latest release](https://github.com/mbinks/SP-Busy/releases)
 2. In Super Productivity: **Settings > Plugins > Upload Plugin**
 3. Select the ZIP file
-4. "HA Bridge" appears in the left sidebar
+4. "BusyBar Status Sync" appears in the left sidebar
 
 ## Setup
 
-1. Click **HA Bridge** in the sidebar
+1. Click **BusyBar Status Sync** in the sidebar
 2. Go to the **Settings** tab
-3. Enter your **Home Assistant URL** (e.g., `http://homeassistant.local:8123`)
-4. Enter a **Long-Lived Access Token** (HA Profile > Long-Lived Access Tokens > Create)
-5. Optionally enter your **Webhook ID** for instant sync
+3. Enter your **BusyBar API Token** (Get from your BusyBar account settings)
+4. Optionally customize the default BusyBar URL (defaults to `https://api.busy.app/busybar`)
+5. Click **Test Connection** to verify
 6. Click **Save Settings**
-7. Badge should show "Connected" with your HA version
 
-## Creating Rules
+## Features
 
-1. Go to the **Rules** tab
-2. Click **+ Add Rule**
-3. Choose a **Trigger** (when should this fire?)
-4. Optionally set **Conditions** (only for certain projects/tags)
-5. Choose an **Action** (what should happen in HA?)
-6. Pick your target from the dropdown (scenes, lights, automations — all auto-discovered from HA)
-7. **Save Rule**
+### Automatic Status Updates
+- **Task Started** → BusyBar status set to `busy` with emoji and task title
+- **Task Stopped** → BusyBar status set to `available`
+- **All Tasks Done** → Custom status (configurable)
+- **Day Ended** → Custom status (configurable)
 
-### Example Rules
+### Custom Rules
+Create rules to customize status updates based on:
+- Specific projects
+- Specific tags
+- Timer thresholds (e.g., after 25 minutes of work)
+- Idle time
 
-| Name | Trigger | Action |
-|------|---------|--------|
-| Focus lights | Task Started | Scene: focus_mode |
-| Relax mode | Task Stopped | Scene: relax |
-| Break reminder | Timer: 25 min | Phone Notification: "Pomodoro break!" |
-| Deep work music | Task Started (tag: deep-work) | Media: Play |
-| Celebrate | All Today's Done | Scene: party |
-| Dim for late work | Timer: 120 min | Light: brightness 100, temp 2700K |
-
-## Tabs
+### Tabs
 
 | Tab | Purpose |
 |-----|---------|
-| **Rules** | Create/edit/toggle automation rules |
-| **Sensors** | View live HA sensor data while working |
-| **Services** | Call any HA service manually |
-| **Settings** | Configure connection + sensor display |
+| **Status** | View and manually update your current BusyBar status |
+| **Rules** | Create/edit/toggle automation rules for custom status updates |
+| **Settings** | Configure BusyBar API token and connection |
+
+## Example Rules
+
+| Name | Trigger | Status | Emoji | Message |
+|------|---------|--------|-------|---------|
+| Deep Focus | Task Started (tag: deep-work) | `busy` | 🎯 | Working on: {title} |
+| Break Time | Timer: 25 min | `break` | ☕ | Taking a break |
+| Available | Task Stopped | `available` | ✅ | Back online |
+| Done for Today | All Today's Done | `available` | 🎉 | Done for the day! |
+
+## How It Works
+
+- **plugin.js** (background, survives navigation):
+  - Stores BusyBar API token securely via `setSecret`/`getSecret`
+  - Handles all authenticated BusyBar API calls
+  - Runs the rules engine and hooks
+  - Exposes `window.busybarBridge` for the iframe
+  
+- **index.html** (iframe UI, destroyed on navigation):
+  - Pure UI — status display, rules editor, settings
+  - Communicates with plugin.js via `window.parent.busybarBridge`
+  - Never directly handles credentials
+
+- **Hooks** fire non-blocking (via `setTimeout`) to avoid timeout issues
+- **Timer/Idle** rules use background intervals in plugin.js
+- **Config** persists via `persistDataSynced`, token via `setSecret` (never synced)
+
+## Security
+
+- BusyBar API token stored via `PluginAPI.setSecret()` — **never in synced/exported data**
+- `setSecret`/`getSecret` only available from plugin.js (not iframe)
+- Iframe never directly handles credentials
+- Old configs with embedded tokens auto-migrate to secret storage
 
 ## Requirements
 
 - Super Productivity v10+ (Electron desktop app)
-- Home Assistant with a Long-Lived Access Token
-- Both on the same local network
+- BusyBar account with API access
+- Internet connection to reach BusyBar API
 
-## How It Works
+## API Reference
 
-- **plugin.js** (host context, survives navigation):
-  - Stores HA token securely via `setSecret`/`getSecret`
-  - Handles ALL authenticated HA API calls
-  - Runs the rules engine and hook handlers
-  - Exposes `window.haBridge` bridge for the iframe
-- **index.html** (iframe, destroyed on navigation):
-  - Pure UI — rules editor, sensor display, service caller, settings
-  - Communicates with plugin.js via `window.parent.haBridge`
-  - Never stores or directly uses credentials
-- **Hooks** fire non-blocking (via `setTimeout`) to avoid SP's ~2s timeout
-- **Timer/Idle** rules use background intervals in plugin.js
-- **Config** persists via `persistDataSynced` (from plugin.js), token via `setSecret`
+### BusyBar Status Values
+- `busy` - You're actively working
+- `available` - You're available for interruption
+- `break` - Taking a break
+- `offline` - Not available
+- Custom status values supported
 
-## Security
+### Status Update Payload
+```json
+{
+  "status": "busy",
+  "emoji": "🎯",
+  "message": "Working on: Task Title"
+}
+```
 
-- Access token stored via `PluginAPI.setSecret()` — **never in synced/exported data**
-- `setSecret`/`getSecret` only available from plugin.js (not iframe)
-- Iframe never handles raw credentials
-- Old configs with embedded tokens auto-migrate to secret storage
+## Troubleshooting
+
+**Connection Failed?**
+- Verify your BusyBar API token is correct
+- Check that BusyBar API is accessible from your network
+- Try the "Test Connection" button in Settings
+
+**Status Not Updating?**
+- Make sure the plugin is enabled
+- Check that your rules are enabled
+- Review the browser console for error logs (F12 in Super Productivity)
+
+**Token Lost After Sync?**
+- Tokens stored via `setSecret()` are local-only and don't sync across devices
+- Re-enter your token on each device
 
 ## Version History
 
-- **5.0** — Architecture rewrite: plugin.js owns secrets + API, iframe is pure UI (bridge pattern)
-- **4.2** — Security: token moved to setSecret/getSecret, today detection fixed
-- **4.0** — All 12 SP hooks, 20 triggers, correct currentTaskChange payload handling
-- **3.2** — Full rewrite: 8 triggers, 9 action types, sensor picker, media/TTS/light control
-- **3.0** — Rules engine, timer/idle triggers, deferred hooks
-- **2.0** — Config via persistDataSynced, tabbed UI
-- **1.0** — Basic scene toggle, webhook push
+- **1.0** — Initial release: BusyBar API integration with automatic status updates and rules engine
+
+## Credits
+
+Built as a fork of [ha-super-productivity](https://github.com/jloops412/ha-super-productivity) by jloops412, adapted for BusyBar integration.
