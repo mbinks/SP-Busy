@@ -129,7 +129,7 @@ async function updateBusyBarStatus(status, emoji = '', message = '') {
     // Use smart home switch to indicate status
     // true = busy, false = available
     const isBusy = (status === 'busy' || status === 'offline');
-    const payload = { on: isBusy };
+    const payload = { state: isBusy };
     
     const result = await busybarApi('POST', '/busybar/smart_home/switch', payload);
     if (result) {
